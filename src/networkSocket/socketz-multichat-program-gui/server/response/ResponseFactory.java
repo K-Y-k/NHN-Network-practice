@@ -20,6 +20,9 @@ public class ResponseFactory {
 
         // WhisperResponse() 객체를 등록합니다.
         add(new WhisperResponse());
+
+        // BroadCastResponse() 객체를 등록합니다.
+        add(new WhoamiResponse());
     }};
 
     public static Response getResponse(String method){

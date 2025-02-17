@@ -35,6 +35,7 @@ public class ResponseFactory {
         add(new LoginResponse());
         add(new BroadCastResponse());
         add(new WhisperResponse());
+        add(new WhoamiResponse());
      */
 
 
