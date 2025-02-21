@@ -1,0 +1,221 @@
+= **Client** 클래스 상세 설명
+
+== 1. 개요
+
+* **Client** 클래스는 MQTT 프로토콜을 사용하는 클라이언트의 기본 기능을 제공하는 추상 클래스입니다.
+* 이 클래스는 브로커와의 연결을 관리하고 MQTT 메시지를 송수신하는 기능을 제공합니다.
+
+
+
+== 2. 주요 역할
+- MQTT 브로커에 연결 (**Socket**을 이용)
+- MQTT 메시지 송수신 (**DataInputStream**, **DataOutputStream** 사용)
+- CONNECT, CONNACK, DISCONNECT 메시지 처리
+- QoS 및 클린 세션 설정 관리
+- 각종 메시지 전송 및 처리 기능 제공 (상속받는 클래스에서 **processing()**을 구현해야 함)
+- 멀티 스레드 지원 (**Runnable** 인터페이스 구현)
+
+
+
+== 3. 주요 필드
+
+
+[source,java]
+----
+private static final ThreadLocal<Integer> packetId = ThreadLocal.withInitial(() -> 0);
+private final String clientId;
+private Socket socket;
+private DataInputStream input;
+private DataOutputStream output;
+private boolean cleanSession = true;
+private int qos = 0;
+----
+
+[cols="1a,4a"]
+|===
+^s| 필드 ^s| 설명
+| **packetId** | 패킷 식별자 (각 메시지마다 고유 ID 부여, **ThreadLocal**로 관리)
+| **clientId** | 클라이언트 식별자 (MQTT 브로커에서 클라이언트를 구분하는 ID)
+| **socket** | MQTT 브로커와의 연결을 위한 소켓
+| **input** | 브로커에서 메시지를 수신하기 위한 **DataInputStream**
+| **output** | 브로커로 메시지를 전송하기 위한 **DataOutputStream**
+| **cleanSession** | 클린 세션 여부 (**true**: 새 세션 생성, **false**: 이전 세션 유지)
+| **qos** | QoS(Quality of Service) 수준 (**0**, **1**, **2**만 허용됨)
+|===
+
+
+== 4. 생성자
+=== 4.1 기본 생성자 (MQTT 브로커에 직접 연결)
+
+[source,java]
+----
+protected Client(String brokerHost, int brokerPort, String clientId) throws IOException {
+    // TODO: 인수를 검증하세요. 유효하지 않을 경우, IllegalArgumentException을 발생 시킵니다.
+
+    socket = new Socket(brokerHost, brokerPort);
+    input = new DataInputStream(socket.getInputStream());
+    output = new DataOutputStream(socket.getOutputStream());
+    log.info("Connected to MQTT Broker at {}:{}", brokerHost, brokerPort);
+    this.clientId = clientId;
+}
+----
+
+* 기능
+** MQTT 브로커(**brokerHost**, **brokerPort**)에 연결.
+** 입출력 스트림(**input**, **output**) 설정.
+** 클라이언트 ID 설정.
+** 잘못된 인자 입력 시 예외 발생 (**IllegalArgumentException**).
+
+
+
+=== 4.2 테스트용 생성자 (소켓을 직접 제공)
+
+[source,java]
+----
+protected Client(Socket socket, DataInputStream input, DataOutputStream output, String clientId) {
+    if ((socket == null) || (input == null) || (output == null)) {
+        throw new IllegalArgumentException();
+    }
+
+    this.socket = socket;
+    this.input = input;
+    this.output = output;
+    log.info("Connected to MQTT Broker at mokito");
+    this.clientId = clientId;
+}
+----
+
+* 기능
+** 테스트 환경에서 **Socket**, **DataInputStream**, **DataOutputStream**을 직접 제공.
+** 실제 네트워크 연결 없이 단위 테스트 가능.
+
+
+
+== 5. 실행 흐름 (**run()** 메서드)
+
+[source,java]
+----
+public void run() {
+    try {
+        packetId.set(0);
+
+        // 1. CONNECT 메시지 전송
+        sendConnect();
+
+        // 2️. CONNACK 메시지 수신
+        receiveConnAck();
+
+        // 3. 사용자 정의 메시지 처리 (서브클래스에서 구현)
+        processing();
+
+        // 4. DISCONNECT 메시지 전송 및 종료
+        sendDisconnect();
+    } catch (IOException e) {
+    } finally {
+        closeConnection();
+        packetId.remove();
+    }
+}
+----
+
+* 기능
+1. 패킷 ID 초기화 (**packetId.set(0)**)
+2. CONNECT 메시지 전송 (**sendConnect()**)
+3. 브로커의 응답(CONNACK) 확인 (**receiveConnAck()**)
+4. 사용자 정의 메시지 처리 (**processing()**은 서브클래스에서 구현)
+5. DISCONNECT 메시지 전송 후 연결 종료 (**sendDisconnect()**, **closeConnection()**)
+
+* 멀티스레드 실행 가능 (**Runnable** 인터페이스 구현).
+
+
+
+== 6. 주요 메서드
+=== 6.1 **sendConnect()** - CONNECT 메시지 전송
+
+[source,java]
+----
+void sendConnect() throws IOException {
+    // TODO: CONNECT 메시지를 생성해 전송합니다.
+    log.info("Sent CONNECT: " + clientId);
+}
+----
+
+* 기능
+** MQTT CONNECT 메시지 생성 및 전송.
+** 클린 세션(**cleanSession**) 설정 반영.
+
+
+
+=== 6.2 **receiveConnAck()** - CONNACK 메시지 수신
+
+[source,java]
+----
+void receiveConnAck() throws IOException {
+    // TODO: CONNACK 메시지를 수신하여 검증합니다. 메시지를 유효하지 않을 경우, 연결을 끊습니다.
+    Message message = receive();
+}
+----
+
+* 기능
+** 브로커의 응답을 수신하고 **CONNACK** 메시지인지 확인.
+** 연결 성공(**returnCode == 0x00**) 시 유지, 실패 시 연결 종료.
+
+
+
+=== 6.3 **sendDisconnect()** - DISCONNECT 메시지 전송
+
+[source,java]
+----
+protected void sendDisconnect() throws IOException {
+    send(new DISCONNECT());
+    log.info("Sent DISCONNECT.");
+}
+----
+
+* 기능
+** MQTT DISCONNECT 메시지를 브로커로 전송.
+** 연결을 안전하게 종료.
+
+
+
+=== 6.4 **send()** - 메시지 전송
+
+[source,java]
+----
+protected void send(Message message) throws IOException {
+    message.setQoS(qos);
+    // TODO: 소켓을 통해 메시지를 전송합니다.
+}
+----
+
+* 기능
+** 메시지의 QoS 설정 (**setQoS(qos)**)
+** 출력 스트림을 통해 MQTT 브로커로 메시지 전송.
+
+
+=== 6.5 **receive()** - 메시지 수신 및 파싱
+
+[source,java]
+----
+protected Message receive() throws IOException {
+    byte[] buffer = null;
+    // TODO: 데이터를 받아 기본 메시지 형식이 맞는지 확인합니다. fixed header 정보만 이용합니다.
+
+    return Message.parsing(buffer);
+}
+----
+
+* 기능
+** MQTT 메시지를 수신하고 파싱 (**Message.parsing(buffer)**).
+
+
+== 7. **Client** 클래스의 주요 특징
+
+[cols="1a,4a"]
+|===
+^s| 기능 ^ s| 설명
+| MQTT 메시지 송수신 | **CONNECT**, **CONNACK**, **DISCONNECT** 메시지 처리
+| QoS 및 클린 세션 설정 | QoS 설정 (**0**, **1**, **2**) 및 클린 세션 지원
+| 멀티스레드 지원 | **Runnable** 구현으로 멀티스레드 환경에서 실행 가능
+| 테스트 지원 | **Socket** 기반 생성자를 제공하여 단위 테스트 가능
+|===

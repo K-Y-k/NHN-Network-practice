@@ -1,0 +1,193 @@
+= **PublishClient** 클래스 상세 설명
+
+* **PublishClient** 클래스는 MQTT 프로토콜을 사용하여 특정 토픽으로 메시지를 발행하는 클라이언트입니다.
+* 이 클래스는 **Client** 클래스를 상속하여 MQTT 브로커와의 연결을 관리하고 PUBLISH 메시지를 전송하는 기능을 제공합니다.
+
+
+
+== 1. 주요 역할
+
+* MQTT 브로커에 연결하여 메시지를 발행할 준비를 함.
+* 입력된 메시지를 읽고 해당 메시지를 MQTT PUBLISH 메시지 형식으로 변환.
+* QoS(Quality of Service) 수준 1일 경우 PUBACK 메시지를 기다려서 확인.
+* 전송한 PUBLISH 메시지를 추적하여 ACK(PUBACK) 응답을 관리.
+
+
+
+== 2. 주요 필드
+
+[source,java]
+----
+String topic;
+InputStream messageIn;
+Map<Integer, PUBLISH> publishMap = new ConcurrentHashMap<>();
+----
+
+[cols="1a,4a"]
+|===
+^s| 필드 ^s| 설명
+^s| topic | 메시지를 발행할 MQTT 토픽.
+^s| messageIn | 발행할 메시지를 읽어올 입력 스트림.
+^s| publishMap | QoS 1 메시지 추적용 맵. (발행한 메시지를 저장하고, PUBACK을 받으면 삭제)
+|===
+
+
+
+== 3. 생성자
+=== 3.1 기본 생성자 (MQTT 브로커와 연결)
+
+[source,java]
+----
+public PublishClient(String brokerHost, int brokerPort, String clientId, String topic, InputStream messageIn)
+        throws IOException {
+    super(brokerHost, brokerPort, clientId);
+
+    if (topic == null) {
+        throw new IllegalArgumentException();
+    }
+
+    this.topic = topic;
+    this.messageIn = messageIn;
+}
+----
+
+* 기능
+** MQTT 브로커(**brokerHost**, **brokerPort**)에 연결 후 메시지를 발행할 준비를 함.
+** **topic**이 **null**이면 예외 발생 (**IllegalArgumentException**).
+** **messageIn**을 통해 메시지를 입력받음.
+
+
+
+=== 3.2 소켓 기반 생성자 (직접 **Socket**, **DataInputStream**, **DataOutputStream** 사용)
+
+[source,java]
+----
+public PublishClient(Socket socket, DataInputStream input, DataOutputStream output, String clientId, String topic,
+        InputStream messageIn) {
+    super(socket, input, output, clientId);
+
+    if (topic == null) {
+        throw new IllegalArgumentException();
+    }
+
+    this.topic = topic;
+    this.messageIn = messageIn;
+}
+----
+
+* 기능
+** 이미 설정된 소켓(**Socket**)과 데이터 스트림(**DataInputStream**, **DataOutputStream**)을 사용하여 연결.
+** **topic**이 **null**이면 예외 발생.
+
+* 사용 예:
+** MQTT 클라이언트가 **Socket**을 직접 생성하여 수동으로 설정할 때 사용.
+
+
+
+== 4. **processing()** - 메시지 읽고 PUBLISH 메시지 전송
+
+[source,java]
+----
+@Override
+public void processing() throws IOException {
+    BufferedReader reader = new BufferedReader(new InputStreamReader(messageIn));
+    String line;
+
+    while ((line = reader.readLine()) != null) {
+        // 1. PUBLISH 메시지 전송
+        sendPublish(topic, line);
+
+        if (getQoS() == 1) {
+            // 2. PUBACK 메시지 수신
+            receivePubAck(topic);
+        }
+    }
+}
+----
+
+* 기능
+1. **messageIn**에서 한 줄씩 메시지를 읽음.
+2. **sendPublish(topic, line)**을 호출하여 MQTT PUBLISH 메시지 전송.
+3. QoS가 1이면 **receivePubAck(topic)**을 호출하여 브로커의 PUBACK 메시지를 확인.
+
+* 작동 방식
+** QoS 0: 메시지를 한 번 보내고 확인하지 않음.
+** QoS 1: 메시지를 보내고 브로커가 PUBACK을 보낼 때까지 기다림.
+
+
+
+== 5. **sendPublish()** - PUBLISH 메시지 전송
+
+[source,java]
+----
+void sendPublish(String topic, String message) throws IOException {
+    PUBLISH publish = new PUBLISH(topic, message);
+    send(publish);
+
+    publishMap.put(publish.getPacketId(), publish);
+    log.info("Published message to topic '{}' : {}", topic, message);
+}
+----
+
+* 기능
+1. PUBLISH 메시지 생성 (**new PUBLISH(topic, message)**)
+2. **send(publish);**을 호출하여 MQTT 브로커에 메시지 전송.
+3. QoS 1일 경우 **publishMap**에 저장 → **PUBACK**을 받아야 삭제됨.
+
+* QoS 1 메시지 관리
+** **publishMap.put(publish.getPacketId(), publish);**
+** 브로커로부터 PUBACK을 받을 때까지 메시지를 보관.
+
+
+
+== 6. **receivePubAck()** - PUBACK 메시지 수신
+
+[source,java]
+----
+void receivePubAck(String topic) throws IOException {
+    Message message = receive();
+    if ((message instanceof PUBACK pubAck) && (publishMap.containsKey(pubAck.getPacketId()))) {
+        publishMap.remove(pubAck.getPacketId());
+        log.info("Published topic '{}' confirmed!", topic);
+    } else {
+        throw new IOException("유효하지 않은 메시지를 수신 하였습니다.");
+    }
+}
+----
+
+* 기능
+1. MQTT 브로커로부터 PUBACK 메시지 수신.
+2. **publishMap.containsKey(pubAck.getPacketId())**로 발행된 메시지가 존재하는지 확인.
+3. **publishMap.remove(pubAck.getPacketId());** → 정상 응답이면 삭제.
+4. 예외 처리: 올바른 PUBACK이 아니면 **"유효하지 않은 메시지를 수신 하였습니다."** 예외 발생.
+
+* QoS 1 동작 방식
+1. 클라이언트가 메시지를 발행하면 **publishMap**에 저장.
+2. 브로커가 PUBACK을 보내면 해당 메시지를 **publishMap**에서 삭제.
+3. PUBACK을 받지 못하면 재전송할 수 있음.
+
+
+
+== 7. **PublishClient** 클래스의 작동 흐름
+
+1. MQTT 브로커에 연결
+2. 메시지 입력 스트림(**messageIn**)에서 메시지 읽기
+3. MQTT PUBLISH 메시지 생성 후 브로커에 전송
+4. QoS 1이면 PUBACK 메시지 확인 (정상적으로 도착했는지 검증)
+5. 메시지를 반복적으로 발행
+6. 연결 종료 또는 오류 발생 시 종료
+
+
+
+== 8. **PublishClient** 클래스의 주요 특징
+
+[cols="1a,4a,]
+|===
+^s| 기능 ^s| 설명
+^s| MQTT 메시지 발행 | MQTT PUBLISH 메시지를 생성하여 브로커로 전송
+^s| QoS 지원 | QoS 1: 메시지를 추적하고 PUBACK 수신 시 삭제
+^s| 스트림 기반 메시지 입력 | **InputStream**을 사용하여 외부에서 메시지를 입력받아 발행
+^s| 멀티 클라이언트 지원 | **Socket** 기반 생성자를 제공하여 다중 클라이언트 환경 지원
+^s| 비동기 메시지 관리 | **ConcurrentHashMap**을 사용하여 발행된 메시지를 안전하게 추적
+|===
+

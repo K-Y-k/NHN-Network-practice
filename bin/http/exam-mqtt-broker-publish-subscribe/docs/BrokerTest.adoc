@@ -1,0 +1,54 @@
+== Broker 클래스 주요 테스트 항목
+
+* **BrokerTest** 클래스는 MQTT 브로커(Broker)의 동작을 검증하는 단위 테스트를 수행하는 JUnit 5 기반의 테스트 클래스입니다.
+* 이 테스트는 실제 소켓 통신을 활용하여 클라이언트와 브로커 간의 메시지 흐름을 검증합니다.
+
+=== 1. 브로커 실행 및 종료 테스트
+* **testBrokerStartsSuccessfully**
+** 브로커가 정상적으로 실행되고 클라이언트가 소켓 연결을 할 수 있는지 확인.
+
+* **setUp()** & **tearDown()**
+** **@BeforeAll**: **Broker** 인스턴스를 생성하고 **ExecutorService**를 이용해 실행.
+** **@AfterAll**: 브로커를 중단하고 **ExecutorService**를 종료.
+
+=== 2. 클라이언트 연결 테스트
+* **testClientConnectsAndReceivesConnAck**
+** 클라이언트가 CONNECT 메시지를 보내면 브로커가 CONNACK을 반환하는지 검증.
+** DISCONNECT 메시지를 정상적으로 처리하는지 확인.
+
+=== 3. 구독 및 구독 응답 테스트
+* **testClientSubscribesAndReceivesSubAck**
+** SUBSCRIBE 요청을 보낸 후 SUBACK을 받는지 검증.
+
+=== 4. 메시지 발행 및 전달 테스트
+* **testClientPublishesMessage**
+1. 클라이언트 1(Publisher)와 클라이언트 2(Subscriber)가 브로커에 연결
+2. Subscriber가 특정 토픽을 구독 (**SUBSCRIBE**)
+3. Publisher가 해당 토픽에 메시지를 발행 (**PUBLISH**)
+4. Subscriber가 PUBLISH 메시지를 정상적으로 수신하는지 검증
+
+** QoS 1 설정이 올바르게 적용되는지도 확인.
+
+
+
+=== 5. 구독 취소 테스트
+* **testClientUnsubscribes**
+1. 클라이언트가 토픽을 구독한 후 (**SUBSCRIBE**) 정상적인 메시지 수신을 확인.
+2. 구독을 취소 (**UNSUBSCRIBE**).
+3. 구독 해제 이후, 동일한 토픽에 메시지를 발행해도 메시지를 수신하지 않는지 확인.
+
+=== 6. PING 메시지 처리 테스트
+* **testClientSendsPingReq**
+1. 클라이언트가 PINGREQ 메시지를 보냄.
+2. 브로커가 PINGRESP 메시지를 정상적으로 응답하는지 확인.
+
+
+=== 7. 유틸리티 메서드
+==== 7.1 **send(DataOutputStream output, Message message)**
+* 클라이언트가 브로커로 MQTT 메시지를 전송할 때 사용.
+* **Message.toByteArray()**를 호출하여 바이트 배열로 변환 후 전송.
+
+==== 7.2 **receive(DataInputStream input)**
+* 브로커에서 MQTT 메시지를 수신할 때 사용.
+* **Message.parsing(buffer)**을 호출하여 바이트 배열을 MQTT 메시지 객체로 변환.
+

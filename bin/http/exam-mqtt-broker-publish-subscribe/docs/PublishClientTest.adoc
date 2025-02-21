@@ -1,0 +1,39 @@
+== PublishClient 클래스 주요 테스트 항목
+
+* **PublishClientTest** 클래스는 MQTT Publish Client의 동작을 검증하는 단위 테스트를 수행하는 JUnit 5 기반의 테스트 클래스입니다.
+* 이 테스트는 Mockito를 활용하여 **Socket**, **DataInputStream**, **DataOutputStream**을 Mock 객체로 대체하고, 클라이언트의 메시지 전송, PUBACK 수신, QoS 처리 등의 기능을 검증합니다.
+
+=== 1. 클라이언트 생성 테스트
+* **testValidClientCreation**
+** **PublishClient** 객체가 정상적으로 생성되는지 검증.
+
+* **testInvalidClientHostCreation**
+** 잘못된 브로커 호스트가 입력되었을 때 예외 발생 여부 검증.
+
+* **testInvalidClientPortCreation**
+** 잘못된 포트 번호가 입력되었을 때 예외 발생 여부 검증.
+
+* **testInvalidClientIdCreation**
+** 잘못된 클라이언트 ID가 입력되었을 때 예외 발생 여부 검증.
+
+=== 2. MQTT 메시지 전송 테스트
+* **testSendPublish**
+** MQTT PUBLISH 메시지를 브로커로 정상적으로 전송하는지 검증.
+** **flush()**가 정상적으로 호출되었는지 확인.
+** **publishMap**에 패킷 ID가 저장되었는지 확인.
+
+
+
+=== 3. PUBACK 수신 및 처리 테스트
+* **testReceivePubAckValid**
+** 유효한 PUBACK 메시지를 수신하면 publishMap에서 패킷 ID가 제거되는지 검증.
+
+* **testReceivePubAckInvalid**
+** 잘못된 PUBACK 메시지를 수신했을 때 예외가 발생하는지 검증.
+
+
+
+=== 4. QoS 1 메시지 처리 테스트
+* **testSendAndReceivePubAckQoS1**
+** QoS=1로 메시지를 발행한 후 PUBACK을 정상적으로 수신하는지 검증.
+** Packet ID가 정상적으로 제거되는지 확인.

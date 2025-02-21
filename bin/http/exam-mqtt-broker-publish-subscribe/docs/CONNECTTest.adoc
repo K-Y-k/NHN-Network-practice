@@ -1,0 +1,77 @@
+== CONNECT 클래스 주요 테스트 항목
+
+* **CONNECTTest** 클래스는 MQTT CONNECT 메시지의 직렬화(Serialization) 및 역직렬화(Deserialization) 동작을 검증하는 단위 테스트입니다.
+* 이 테스트는 클라이언트 ID 유효성 검사, CONNECT 패킷 직렬화 및 파싱, 예외 처리 등이 올바르게 수행되는지 확인합니다.
+
+=== 1. Client ID 검증 테스트
+
+* **testValidClientId**
+** 올바른 Client ID를 입력했을 때, **CONNECT** 객체가 정상적으로 생성되는지 확인.
+
+* **testInvalidClientIdTooLong**
+** Client ID가 23자를 초과하면 예외 발생하는지 검증.
+
+* **testInvalidClientIdEmpty**
+** Client ID가 비어 있으면 예외 발생하는지 검증.
+
+=== 2. CONNECT 메시지 직렬화 및 역직렬화 테스트
+* **testValidCONNECTMessageSerialization**
+1. **CONNECT** 객체를 생성하고 UserName, Password, CleanSession, KeepAlive 값을 설정.
+2. **toByteArray()**로 직렬화(Serialization) 한 후
+3. **CONNECT** 생성자로 역직렬화(Deserialization) 해서 값이 유지되는지 확인.
+
+=== 3. 잘못된 CONNECT 페이로드 테스트
+* **testInvalidCONNECTPayload**
+** 잘못된 크기의 페이로드로 객체를 생성할 때 예외 발생하는지 검증.
+
+* **testInvalidProtocolName**
+** MQTT 프로토콜 이름이 'MQTT'가 아닐 경우 예외 발생하는지 검증.
+
+* **testSetInvalidProtocolLevel**
+** 잘못된 프로토콜 레벨을 설정하면 예외 발생하는지 검증.
+
+=== 4. User Name & Password 관련 테스트
+* **testUserNameSetter**
+** User Name을 설정하고 올바르게 저장되는지 확인.
+
+* **testSetUserNameNull**
+** User Name이 **null**이면 예외 발생하는지 검증.
+
+* **testSetPasswordNull**
+** Password가 **null**이면 예외 발생하는지 검증.
+
+=== 5. Keep Alive 및 Clean Session 설정 테스트
+* **testKeepAliveSetter**
+** Keep Alive 값이 정상적으로 설정되는지 확인.
+
+* **testCleanSessionSetter**
+** Clean Session이 정상적으로 설정되는지 확인.
+
+=== 6. CONNECT 패킷 파싱 테스트
+* **testValidPayload**
+** 정상적인 바이트 배열을 사용하여 **CONNECT** 객체를 생성하고 값이 유지되는지 검증.
+
+* **testInvalidShortPayload**
+** 너무 짧은 바이트 배열을 입력하면 예외 발생하는지 확인.
+
+* **testInvalidOffsetLength**
+** 잘못된 offset과 length 값을 입력하면 예외 발생하는지 확인.
+
+* **testInvalidProtocolLevel**
+** Protocol Level이 올바르지 않으면 예외 발생하는지 확인.
+
+* **testInvalidClientId**
+1. Client ID가 23자를 초과하면 예외 발생
+2. Client ID가 비어 있으면 예외 발생
+
+* **testValidUserNamePayload**
+** User Name 필드가 존재하는 경우 정상적으로 파싱되는지 확인.
+
+* **testValidPasswordPayload**
+** Password 필드가 존재하는 경우 정상적으로 파싱되는지 확인.
+
+=== 7. 헬퍼 메서드 (CONNECT 패킷 생성)
+
+* **createValidConnectPayload(String clientId, String userName, String password)**
+** MQTT CONNECT 패킷을 생성하는 유틸리티 메서드.
+** **MQTT** 프로토콜 헤더, **Client ID**, **User Name**, **Password**를 포함한 올바른 CONNECT 메시지 바이트 배열을 생성.
