@@ -1,0 +1,53 @@
+== SubscribeClient 클래스 주요 테스트 항목
+
+* **SubscribeClientTest** 클래스는 MQTT Subscribe Client의 동작을 검증하는 단위 테스트를 수행하는 JUnit 5 기반의 테스트 클래스입니다.
+* 이 테스트는 Mockito를 활용하여 **Socket**, **DataInputStream**, **DataOutputStream**을 Mock 객체로 대체하고, 클라이언트의 토픽 관리, 구독 요청, 메시지 수신, SUBACK 처리 등의 기능을 검증합니다.
+
+
+
+=== 1. 클라이언트 생성 테스트
+* **testValidClientCreation**
+** **SubscribeClient** 객체가 정상적으로 생성되는지 검증.
+** 구독한 토픽이 초기에는 0개인지 확인.
+
+* **testInvalidClientCreation** (매개변수화 테스트)
+** 잘못된 호스트, 포트, 클라이언트 ID로 객체를 생성할 때 예외 발생 여부 검증.
+** **@MethodSource**를 활용하여 다양한 입력값을 테스트.
+
+
+
+=== 2. 토픽 관리 테스트
+* **testAddTopic**
+** 클라이언트가 구독할 토픽을 정상적으로 추가하는지 검증.
+
+* **testAddDuplicateTopic**
+** 동일한 토픽을 중복 추가했을 때 중복이 방지되는지 검증.
+
+
+
+=== 3. SUBSCRIBE 메시지 전송 테스트
+* **testSendSubscribe**
+** MQTT SUBSCRIBE 메시지를 브로커로 정상적으로 전송하는지 검증.
+** **flush()**가 정상적으로 호출되었는지 확인.
+
+
+
+=== 4. SUBACK 수신 및 처리 테스트
+* **testReceiveSubAckValid**
+** 유효한 SUBACK 메시지를 수신하면 예외 없이 정상 처리되는지 검증.
+
+* **testReceiveSubAckInvalid**
+** 잘못된 SUBACK 메시지를 수신했을 때 예외가 발생하는지 검증.
+
+
+
+=== 5. PUBLISH 메시지 수신 테스트
+* **testListenForMessages**
+** 클라이언트가 브로커로부터 PUBLISH 메시지를 정상적으로 수신하고, 메시지 루프가 실행되는지 검증.
+** **Thread**를 사용하여 **listenForMessages()** 메서드가 실행됨을 확인하고, 종료 가능성을 테스트.
+
+
+
+=== 6. Verbose 모드 테스트
+* **testVerboseMode**
+** Verbose 모드를 활성화하면 메시지가 출력되는지 검증.

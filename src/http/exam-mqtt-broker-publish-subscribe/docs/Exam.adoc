@@ -1,0 +1,34 @@
+= Java Socket Programming 과정 평가 시험
+
+* 본 시험은 Java Socket Programming 학습에 대한 학습 현황 및 복습을 목적으로 합니다.
+* 첨부된 자료를 확인하면서 작성해 주시기 바랍니다.
+
+
+== 프로토콜 관련 설명
+
+* link:MQTT.adoc[MQTT(Message Queuing Telemetry Transport)란?]
+
+== 주요 클래스 관련 설명
+
+* link:Message.adoc[Message 클래스 - 서버 클라이언트간에 주고 받는 메시지의 기본 클래스]
+* link:Client.adoc[Client 클래스 - Publish/Subscribe를 위한 기본 구조 제공]
+* link:PublishClient.adoc[PublishClient 클래스 - Publish 클라이언트를 위한 기능 지원]
+* link:SubscribeClient.adoc[SubscribeClient 클래스 - Subscribe 클라이언트를 위한 기능 지원]
+* link:Broker.adoc[Broker 클래스 - Broker를 위한 기능 지원]
+
+== 단위 테스트 관련 설명
+
+* link:MessageTest.adoc[Message 클래스 단위 테스트]
+* link:CONNECTTest.adoc[CONNECT 클래스 단위 테스트]
+* link:ClientTest.adoc[Client 클래스 단위 테스트]
+* link:PublishClientTest.adoc[PublishClient 클래스 단위 테스트]
+* link:SubscribeClientTest.adoc[SubscribeClient 클래스 단위 테스트]
+* link:BrokerTest.adoc[Broker 클래스 단위 테스트]
+
+==  주요 기술 및 개념
+
+* link:https://junit.org/junit5/[JUnit 5] (**@BeforeEach**, **@Test**, **assertNotNull**, **assertThrows**)
+* link:https://site.mockito.org/[Mockito] (**mock()**, **when()**, **doNothing()**, **verify()**, **doAnswer()**)
+* Java I/O (link:https://docs.oracle.com/javase/8/docs/api/java/net/Socket.html[Socket], link:https://docs.oracle.com/javase/8/docs/api/java/io/DataInputStream.html[DataInputStream], https://docs.oracle.com/javase/8/docs/api/java/io/DataOutputStream.html[DataOutputStream])
+* MQTT PUBLISH 메시지 전송 및 PUBACK 수신 테스트
+* QoS 검증 및 예외 처리 테스트

@@ -1,0 +1,42 @@
+== Client 클래스 주요 테스트 항목
+
+* **ClientTest** 클래스는 MQTT Client의 동작을 검증하는 단위 테스트를 수행하는 JUnit 5 기반의 테스트 클래스입니다.
+* 이 클래스는 Mockito를 활용하여 **Socket**, **DataInputStream**, **DataOutputStream**을 Mock 객체로 대체하고, MQTT 메시지 송수신 및 클라이언트의 동작을 검증합니다.
+
+=== 1. 클라이언트 생성 테스트
+
+* **testValidClientCreation**
+** **Client** 객체가 정상적으로 생성되는지 검증.
+
+* **testInvalidClientCreation**
+** 잘못된 인자(**null** 또는 유효하지 않은 값)가 전달될 때 예외가 발생하는지 검증.
+
+=== 2. MQTT 연결 테스트
+* **testSendConnect**
+** **Client**가 MQTT CONNECT 메시지를 올바르게 전송하는지 검증.
+
+* **testReceiveConnAckValid**
+** 유효한 CONNACK 메시지를 수신하면 예외가 발생하지 않는지 검증.
+
+* **testReceiveConnAckInvalid**
+** 유효하지 않은 CONNACK 메시지를 수신했을 때 예외가 발생하는지 검증.
+
+=== 3. QoS 관련 테스트
+* **testQoSSettings**
+** QoS 설정이 올바르게 동작하는지 검증.
+** **0~2** 사이의 값만 허용하며, **3** 또는 **-1**을 설정하면 예외 발생.
+
+=== 4. MQTT 메시지 전송 및 수신 테스트
+* **testSendDisconnect**
+** **Client**가 DISCONNECT 메시지를 정상적으로 브로커에 전송하는지 검증.
+
+* **testReceiveMessage**
+** **Client**가 메시지를 정상적으로 수신하고 파싱할 수 있는지 검증.
+
+=== 5. 클라이언트 종료 및 자원 해제 테스트
+* **testCloseConnection**
+** 클라이언트가 연결을 종료할 때 InputStream, OutputStream, Socket이 정상적으로 닫히는지 검증.
+
+=== 6. 패킷 ID 생성 테스트
+* **testGetPacketId**
+** 패킷 ID가 1씩 증가하면서 올바르게 생성되는지 검증.
